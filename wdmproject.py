@@ -1,0 +1,63 @@
+#%%
+import pandas as pd
+df_movies = pd.read_csv('tmdb_5000_movies.csv')
+df_movies.head()
+#%%
+df_movies.columns
+
+#%%
+df_movies.isnull().sum()
+#%%
+import pandas as pd
+import ast
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+def load_and_process_data():
+    df_movies = pd.read_csv('tmdb_5000_movies.csv')
+    df_movies.dropna(subset=['overview', 'genres', 'keywords','homepage'], inplace=True)
+    df_movies['genres'] = df_movies['genres'].apply(ast.literal_eval)
+    df_movies['keywords'] = df_movies['keywords'].apply(ast.literal_eval)
+
+    # Extract genres and combine features
+    df_movies['genres'] = df_movies['genres'].apply(lambda x: ' '.join([genre['name'] for genre in x]))
+    df_movies['combined_features'] = df_movies['overview'] + ' ' + df_movies['genres'] + ' ' + df_movies['keywords'].apply(lambda x: ' '.join([keyword['name'] for keyword in x]))
+
+    # Create TF-IDF matrix
+    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf.fit_transform(df_movies['combined_features'])
+
+    # Compute cosine similarity
+    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+
+    # Save the processed data
+    df_movies.to_csv('processed_movies.csv', index=False)
+    pd.DataFrame(cosine_sim).to_csv('cosine_similarity.csv', index=False)
+
+    return df_movies, cosine_sim
+
+# Call the function to process and save data
+load_and_process_data()
+#%%
+df_movies = pd.read_csv('processed_movies.csv')
+cosine_sim = pd.read_csv('cosine_similarity.csv').values  # Convert to numpy array
+
+
+def get_recommendations(title, df_movies, cosine_sim):
+    # Get the index of the movie that matches the title
+    idx = df_movies.index[df_movies['title'] == title].tolist()[0]
+
+    # Get the pairwise similarity scores of all movies with that movie
+    sim_scores = list(enumerate(cosine_sim[idx]))
+
+    # Sort the movies based on the similarity scores
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+
+    # Get the scores of the 5 most similar movies
+    sim_scores = sim_scores[1:6]  # Exclude the first one as it is the movie itself
+
+    # Get the movie indices
+    movie_indices = [i[0] for i in sim_scores]
+
+    # Return the top 5 most similar movies
+    return df_movies['title'].iloc[movie_indices]
