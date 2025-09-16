@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
-import wdmproject  # Ensure 'wdmproject.py' is available
-
+import wdmproject  
 # Load data
 df_movies = pd.read_csv('processed_movies.csv')
-cosine_sim = pd.read_csv('cosine_similarity.csv').values  # Convert to numpy array
+cosine_sim = pd.read_csv('cosine_similarity.csv').values  
 
 # Set page config
 st.set_page_config(page_title="Movie Recommender", layout="wide")
@@ -45,13 +44,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Title with increased font size using HTML and inline CSS
 st.markdown('<h1 style="text-align: center; font-size: 60px; color: #ff4b4b; font-weight: bold;">🎬 Movie Recommendation System 🍿</h1>', unsafe_allow_html=True)
 
-# Movie selection dropdown
 selected_movie = st.selectbox("🔍 Select a movie:", df_movies['title'].values)
 
-# Fetch movie details
 movie_info = df_movies[df_movies['title'] == selected_movie].iloc[0]
 
 # Movie details section (without the poster)
